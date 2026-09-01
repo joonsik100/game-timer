@@ -8,7 +8,7 @@ struct MainView: View {
     /// 차감 열과 추가 열이 함께 봐야 하므로 여기서 소유한다.
     @State private var isAuthenticating = false
 
-    // 전용 기기(안내 접근으로 고정한 아이패드)를 오래 켜 둘 때 화면을 아끼기 위한 상태.
+    // 전용 기기(사용법 유도로 고정한 아이패드)를 오래 켜 둘 때 화면을 아끼기 위한 상태.
     @Environment(\.scenePhase) private var scenePhase
     @State private var lastInteraction = Date()
     @State private var dimmer = ScreenDimmer()
