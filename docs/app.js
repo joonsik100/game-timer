@@ -22,6 +22,22 @@ function persist() {
   $('save-warning').hidden = !saveFailed;
 }
 
+// ---------- 테마 ----------
+
+const darkQuery = window.matchMedia('(prefers-color-scheme: dark)');
+
+/** 설정과 현재 시각으로 실제 테마를 정해 <html>에 반영한다. */
+function applyTheme() {
+  const theme = C.effectiveTheme(state.settings.theme, new Date(), darkQuery.matches);
+  document.documentElement.dataset.theme = theme;
+  // 상태 표시줄 주변 색도 맞춰 준다.
+  for (const meta of document.querySelectorAll('meta[name="theme-color"]')) meta.remove();
+  const meta = document.createElement('meta');
+  meta.name = 'theme-color';
+  meta.content = theme === 'dark' ? '#000000' : '#ffffff';
+  document.head.append(meta);
+}
+
 // ---------- 화면 전환 ----------
 
 const SCREENS = ['setup', 'main', 'history', 'settings'];
@@ -204,6 +220,9 @@ async function deleteEvent(id) {
 
 function renderSettings() {
   renderAuthSection();
+  for (const button of document.querySelectorAll('[data-theme-pref]')) {
+    button.setAttribute('aria-checked', String(button.dataset.themePref === state.settings.theme));
+  }
   $('base-minutes').value = state.settings.weeklyBaseMinutes;
   $('base-hhmm').textContent = C.hhmm(state.settings.weeklyBaseMinutes);
   for (const button of document.querySelectorAll('[data-week-start]')) {
@@ -329,6 +348,17 @@ function wire() {
     });
   }
 
+  for (const button of document.querySelectorAll('[data-theme-pref]')) {
+    button.addEventListener('click', () => {
+      state.settings.theme = button.dataset.themePref;
+      persist();
+      applyTheme();
+      renderSettings();
+    });
+  }
+  // 시스템 모드일 때 기기 설정이 바뀌면 따라간다.
+  darkQuery.addEventListener('change', applyTheme);
+
   for (const button of document.querySelectorAll('[data-add]')) {
     button.addEventListener('click', () => openPresetDialog(button.dataset.add, null));
   }
@@ -415,13 +445,19 @@ function wire() {
   });
 
   // 주가 바뀌는 순간을 놓치지 않도록 1분마다 다시 그린다.
-  setInterval(() => { if (!$('screen-main').hidden) renderMain(); }, 60_000);
+  setInterval(() => {
+    applyTheme(); // 자동 모드의 전환 시각(19시/7시)을 놓치지 않게
+    if (!$('screen-main').hidden) renderMain();
+  }, 60_000);
   document.addEventListener('visibilitychange', () => {
-    if (!document.hidden && !$('screen-main').hidden) renderMain();
+    if (document.hidden) return;
+    applyTheme();
+    if (!$('screen-main').hidden) renderMain();
   });
 }
 
 async function start() {
+  applyTheme();
   wire();
   const needsSetup = !state.auth.credentialId && !state.auth.pinHash;
   if (needsSetup) {

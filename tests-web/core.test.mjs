@@ -138,3 +138,30 @@ test('서머타임이 낀 주도 7일 모두 포함한다', () => {
   eighth.setDate(eighth.getDate() + 7);
   assert.ok(!C.intervalContains(week, eighth));
 });
+
+test('테마 결정', () => {
+  const at = (h) => new Date(2025, 7, 25, h, 0);
+
+  // 고정 선택은 시각·기기 설정과 무관하다
+  for (const h of [3, 12, 22]) {
+    assert.equal(C.effectiveTheme('light', at(h), true), 'light');
+    assert.equal(C.effectiveTheme('dark', at(h), false), 'dark');
+  }
+
+  // 시스템은 기기 설정을 따른다
+  assert.equal(C.effectiveTheme('system', at(12), true), 'dark');
+  assert.equal(C.effectiveTheme('system', at(12), false), 'light');
+  assert.equal(C.effectiveTheme('system', at(23), false), 'light');
+
+  // 자동은 시각으로만 정한다 (19시~7시 어둡게), 기기 설정 무시
+  assert.equal(C.effectiveTheme('auto', at(19), false), 'dark', '19시 정각부터 어둡게');
+  assert.equal(C.effectiveTheme('auto', at(23), false), 'dark');
+  assert.equal(C.effectiveTheme('auto', at(0), false), 'dark');
+  assert.equal(C.effectiveTheme('auto', at(6), false), 'dark');
+  assert.equal(C.effectiveTheme('auto', at(7), true), 'light', '7시 정각부터 밝게');
+  assert.equal(C.effectiveTheme('auto', at(12), true), 'light');
+  assert.equal(C.effectiveTheme('auto', at(18), false), 'light', '18시는 아직 밝게');
+
+  // 모르는 값은 시스템처럼 다룬다
+  assert.equal(C.effectiveTheme(undefined, at(12), true), 'dark');
+});

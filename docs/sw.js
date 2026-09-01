@@ -1,6 +1,6 @@
 // 첫 방문 뒤에는 인터넷 없이도 열리도록 앱 파일을 캐시한다.
 // 파일을 고칠 때마다 CACHE 이름의 숫자를 올리면 새 버전이 반영된다.
-const CACHE = 'gametimer-v3';
+const CACHE = 'gametimer-v4';
 const ASSETS = [
   './',
   'index.html',

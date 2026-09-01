@@ -9,6 +9,8 @@ export const MAX_WEEKLY_BASE_MINUTES = 6000;
 const DEFAULT_SETTINGS = {
   weeklyBaseMinutes: 420, // 하루 1시간
   weekStart: 'monday',
+  theme: 'system', // system | light | dark | auto
+
   penalties: [
     { name: '숙제 미완료', minutes: 30 },
     { name: '약속 시간 어김', minutes: 20 },
@@ -73,6 +75,7 @@ function sanitize(raw) {
       MAX_WEEKLY_BASE_MINUTES,
     ),
     weekStart: s.weekStart === 'sunday' ? 'sunday' : 'monday',
+    theme: ['system', 'light', 'dark', 'auto'].includes(s.theme) ? s.theme : 'system',
     penalties: Array.isArray(s.penalties)
       ? s.penalties.map(sanitizePreset).filter(Boolean)
       : base.settings.penalties,

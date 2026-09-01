@@ -12,6 +12,7 @@
   --pad: 16px;
 }
 
+/* 기기 설정을 따르는 기본값. 아래 [data-theme] 규칙이 더 구체적이라 사용자가 고른 값이 이긴다. */
 @media (prefers-color-scheme: dark) {
   :root {
     --fg: #f2f2f3;
@@ -21,6 +22,25 @@
     --muted: rgba(242, 242, 243, 0.58);
     --faint: rgba(242, 242, 243, 0.36);
   }
+}
+
+/* 앱에서 고른 테마. JS가 실제 적용할 값을 계산해 <html data-theme>에 넣는다. */
+:root[data-theme="light"] {
+  --fg: #111214;
+  --bg: #ffffff;
+  --surface: #f4f4f5;
+  --line: rgba(17, 18, 20, 0.14);
+  --muted: rgba(17, 18, 20, 0.55);
+  --faint: rgba(17, 18, 20, 0.35);
+}
+
+:root[data-theme="dark"] {
+  --fg: #f2f2f3;
+  --bg: #000000;
+  --surface: #131315;
+  --line: rgba(242, 242, 243, 0.16);
+  --muted: rgba(242, 242, 243, 0.58);
+  --faint: rgba(242, 242, 243, 0.36);
 }
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }

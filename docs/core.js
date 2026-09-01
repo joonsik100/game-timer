@@ -150,3 +150,24 @@ export function weekTitle(interval, now, weekStart = 'monday') {
   if (interval.start.getTime() === previous.getTime()) return '지난 주';
   return weekRange(interval);
 }
+
+// ---------- 화면 테마 ----------
+
+export const THEMES = ['system', 'light', 'dark', 'auto'];
+
+/** 자동 모드에서 어둡게 유지할 시간대 (19시 ~ 다음날 7시). */
+export const NIGHT_FROM = 19;
+export const NIGHT_TO = 7;
+
+/**
+ * 설정값과 현재 시각으로 실제 적용할 테마를 정한다.
+ * `system`일 때만 기기 설정(prefersDark)을 따른다.
+ */
+export function effectiveTheme(preference, now, prefersDark) {
+  if (preference === 'light' || preference === 'dark') return preference;
+  if (preference === 'auto') {
+    const hour = new Date(now).getHours();
+    return hour >= NIGHT_FROM || hour < NIGHT_TO ? 'dark' : 'light';
+  }
+  return prefersDark ? 'dark' : 'light';
+}
