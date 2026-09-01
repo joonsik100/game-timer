@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="게임 타이머">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/icon-180.png">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="stylesheet" href="app.css">
+<title>게임 타이머</title>
+</head>
+<body>
+
+<!-- 첫 실행: Face ID 등록 -->
+<section id="screen-setup" class="screen" hidden>
+  <div class="setup">
+    <h1>게임 타이머</h1>
+    <p class="muted">시간을 바꾸거나 설정을 열 때 본인 확인을 받습니다.<br>아이가 몰래 시간을 조정하지 못하게 하기 위한 것입니다.</p>
+    <button id="setup-faceid" class="primary">Face ID 등록하기</button>
+    <p id="setup-faceid-note" class="muted small"></p>
+    <hr>
+    <p class="muted small">Face ID를 쓸 수 없을 때를 위한 예비 번호입니다. 아이가 모르는 숫자로 정하세요.</p>
+    <label class="field">
+      <span>예비 PIN (4자리 이상)</span>
+      <input id="setup-pin" type="password" inputmode="numeric" autocomplete="off" placeholder="••••">
+    </label>
+    <button id="setup-done" class="primary">시작하기</button>
+    <p id="setup-error" class="error" role="alert"></p>
+  </div>
+</section>
+
+<!-- 메인 -->
+<section id="screen-main" class="screen" hidden>
+  <header class="bar">
+    <button id="go-history" class="icon" aria-label="기록">▤</button>
+    <h1>게임 타이머</h1>
+    <button id="go-settings" class="icon" aria-label="설정">⚙</button>
+  </header>
+  <div class="main-body">
+    <div class="clock-pane">
+      <p class="muted label">이번 주 남은 시간</p>
+      <p id="remaining" class="clock">00:00</p>
+      <p id="remaining-sub" class="muted label"></p>
+      <p id="save-warning" class="warning" hidden>저장하지 못했습니다. 저장공간을 확인해 주세요</p>
+    </div>
+    <div class="pane-divider"></div>
+    <div class="buttons-pane">
+      <div class="column">
+        <p class="col-head">차감</p>
+        <div id="penalty-list" class="col-list"></div>
+      </div>
+      <div class="column">
+        <p class="col-head">추가</p>
+        <div id="benefit-list" class="col-list"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 기록 -->
+<section id="screen-history" class="screen" hidden>
+  <header class="bar">
+    <button class="icon back" data-back aria-label="뒤로">‹</button>
+    <h1>기록</h1>
+    <span class="icon" aria-hidden="true"></span>
+  </header>
+  <div id="history-body" class="scroll"></div>
+</section>
+
+<!-- 설정 -->
+<section id="screen-settings" class="screen" hidden>
+  <header class="bar">
+    <button class="icon back" data-back aria-label="뒤로">‹</button>
+    <h1>설정</h1>
+    <span class="icon" aria-hidden="true"></span>
+  </header>
+  <div class="scroll">
+    <div class="group">
+      <p class="group-head">주간 기본 시간</p>
+      <div class="row">
+        <input id="base-minutes" type="number" inputmode="numeric" min="0" step="10">
+        <span class="muted">분</span>
+        <span class="spacer"></span>
+        <span id="base-hhmm" class="muted mono"></span>
+      </div>
+      <p class="group-foot">매주 시작일이 되면 이 시간으로 초기화됩니다.</p>
+    </div>
+
+    <div class="group">
+      <p class="group-head">주 시작 요일</p>
+      <div class="segmented" role="radiogroup">
+        <button data-week-start="monday" role="radio">월요일</button>
+        <button data-week-start="sunday" role="radio">일요일</button>
+      </div>
+      <p class="group-foot">주 시작 요일을 바꾸면 이번 주 남은 시간과 지난 기록의 묶음이 다시 계산됩니다.</p>
+    </div>
+
+    <div class="group">
+      <p class="group-head">차감 항목</p>
+      <div id="penalty-settings" class="preset-rows"></div>
+      <button class="add" data-add="penalty">＋ 차감 항목 추가</button>
+    </div>
+
+    <div class="group">
+      <p class="group-head">추가 항목</p>
+      <div id="benefit-settings" class="preset-rows"></div>
+      <button class="add" data-add="benefit">＋ 추가 항목 추가</button>
+    </div>
+
+    <div class="group">
+      <p class="group-head">백업</p>
+      <div class="row">
+        <button id="export-data" class="add">내보내기</button>
+        <button id="import-data" class="add">불러오기</button>
+        <input id="import-file" type="file" accept="application/json" hidden>
+      </div>
+      <p class="group-foot">기록과 설정을 파일로 저장하고 되돌립니다. 기기를 바꾸거나 데이터가 지워졌을 때 씁니다.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 항목 편집 -->
+<dialog id="preset-dialog">
+  <form method="dialog" id="preset-form">
+    <h2 id="preset-title">항목 편집</h2>
+    <label class="field">
+      <span>이름</span>
+      <input id="preset-name" type="text" maxlength="30" placeholder="예: 숙제 미완료" required>
+    </label>
+    <label class="field">
+      <span>시간 (분)</span>
+      <input id="preset-minutes" type="number" inputmode="numeric" min="1" max="1440" step="5" required>
+    </label>
+    <div class="quick" id="preset-quick"></div>
+    <menu>
+      <button value="cancel" type="button" data-close>취소</button>
+      <button value="delete" type="button" id="preset-delete" class="danger">삭제</button>
+      <button value="save" id="preset-save" class="primary">저장</button>
+    </menu>
+  </form>
+</dialog>
+
+<!-- PIN 예비 인증 -->
+<dialog id="pin-dialog">
+  <form method="dialog" id="pin-form">
+    <h2>예비 PIN 입력</h2>
+    <p class="muted small" id="pin-reason"></p>
+    <label class="field">
+      <span>PIN</span>
+      <input id="pin-input" type="password" inputmode="numeric" autocomplete="off" required>
+    </label>
+    <p id="pin-error" class="error" role="alert"></p>
+    <menu>
+      <button value="cancel" type="button" data-close>취소</button>
+      <button value="ok" class="primary">확인</button>
+    </menu>
+  </form>
+</dialog>
+
+<div id="toast" class="toast" hidden></div>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>
