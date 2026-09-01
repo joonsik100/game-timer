@@ -203,6 +203,7 @@ async function deleteEvent(id) {
 // ---------- 설정 ----------
 
 function renderSettings() {
+  renderAuthSection();
   $('base-minutes').value = state.settings.weeklyBaseMinutes;
   $('base-hhmm').textContent = C.hhmm(state.settings.weeklyBaseMinutes);
   for (const button of document.querySelectorAll('[data-week-start]')) {
@@ -226,6 +227,26 @@ function renderSettings() {
       row.addEventListener('click', () => openPresetDialog(kind, preset));
       container.append(row);
     }
+  }
+}
+
+async function renderAuthSection() {
+  const status = $('faceid-status');
+  const button = $('register-faceid');
+  const note = $('auth-note');
+  const registered = !!state.auth.credentialId;
+
+  status.textContent = registered ? '등록됨' : '등록 안 됨';
+  button.textContent = registered ? 'Face ID 다시 등록' : 'Face ID 등록하기';
+  note.textContent = registered
+    ? '시간을 바꾸거나 설정을 열 때 Face ID로 확인합니다. 인식되지 않으면 예비 PIN을 묻습니다.'
+    : 'Face ID가 등록되어 있지 않아 예비 PIN으로만 확인합니다. 위 버튼으로 등록하세요.';
+
+  const available = await Auth.faceIdAvailable();
+  if (!available) {
+    button.disabled = true;
+    status.textContent = '이 기기에서 사용 불가';
+    note.textContent = 'Face ID를 쓰려면 HTTPS 주소에서 열어야 합니다. 예비 PIN으로 계속 쓸 수 있습니다.';
   }
 }
 
@@ -311,6 +332,33 @@ function wire() {
   for (const button of document.querySelectorAll('[data-add]')) {
     button.addEventListener('click', () => openPresetDialog(button.dataset.add, null));
   }
+
+  $('register-faceid').addEventListener('click', async () => {
+    try {
+      state.auth.credentialId = await Auth.registerFaceId();
+      persist();
+      renderAuthSection();
+      toast('Face ID가 등록되었습니다');
+    } catch {
+      toast('Face ID를 등록하지 못했습니다');
+    }
+  });
+
+  $('change-pin').addEventListener('click', async () => {
+    // 지금 PIN을 아는 사람만 바꿀 수 있게 한다.
+    if (state.auth.pinHash && !(await requireAuth('예비 PIN을 바꾸려면 본인 확인이 필요합니다'))) return;
+    const next = prompt('새 예비 PIN (4자리 이상 숫자)');
+    if (next === null) return;
+    if (!/^\d{4,}$/.test(next)) {
+      toast('4자리 이상 숫자여야 합니다');
+      return;
+    }
+    const { hash, salt } = await Auth.hashPin(next);
+    state.auth.pinHash = hash;
+    state.auth.pinSalt = salt;
+    persist();
+    toast('예비 PIN을 바꿨습니다');
+  });
 
   $('export-data').addEventListener('click', () => {
     const blob = new Blob([Store.exportJSON(state)], { type: 'application/json' });
